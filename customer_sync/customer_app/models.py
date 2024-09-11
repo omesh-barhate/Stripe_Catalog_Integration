@@ -13,8 +13,8 @@ class Customer(models.Model):
         return self.id
 
 @receiver(post_save, sender=Customer)
-def customer_saved(sender, instance, **kwargs):
-    if kwargs.get('created', False):
+def customer_saved(sender, instance,created, **kwargs):
+    if created:
         action = 'customer_created'
     else:
         action = 'customer_updated'

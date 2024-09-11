@@ -25,17 +25,17 @@ def check_event(msg):
     if action == CUSTOMER_CREATED_EVENT:
         try:
             stripe.Customer.create(
+                id=customer_id,
                 name=customer_name,
                 email=customer_email
             )
             print(f"Customer {customer_id} created on Stripe")
         except Exception as e:
             print(f"Error creating customer {customer_id} on Stripe: {e}")
-    
     elif action == CUSTOMER_UPDATED_EVENT:
         try:
             stripe.Customer.modify(
-                customer_id,
+                id=customer_id,
                 name=customer_name,
                 email=customer_email
             )
@@ -44,7 +44,6 @@ def check_event(msg):
             print(f"Customer {customer_id} not found on Stripe")
         except Exception as e:
             print(f"Error updating customer {customer_id} on Stripe: {e}")
-
     elif action == CUSTOMER_DELETED_EVENT:
         try:
             stripe.Customer.delete(customer_id)
