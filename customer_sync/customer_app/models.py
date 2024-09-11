@@ -8,6 +8,9 @@ class Customer(models.Model):
     id=models.CharField(primary_key=True,max_length=250)
     name=models.CharField(max_length=700)
     email=models.EmailField()
+    
+    def __str__(self):
+        return self.id
 
 @receiver(post_save, sender=Customer)
 def customer_saved(sender, instance, **kwargs):
