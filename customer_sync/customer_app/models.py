@@ -11,7 +11,10 @@ class Customer(models.Model):
 
 @receiver(post_save, sender=Customer)
 def customer_saved(sender, instance, **kwargs):
-    action = 'customer_created'
+    if kwargs.get('created', False):
+        action = 'customer_created'
+    else:
+        action = 'customer_updated'
     event = new_customer_event(action, instance)
     add_to_queue('customer_events', json.dumps(event).encode('utf-8'))
 

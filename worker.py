@@ -4,6 +4,7 @@ import json
 
 CUSTOMER_CREATED_EVENT = 'customer_created'
 CUSTOMER_DELETED_EVENT = 'customer_deleted'
+CUSTOMER_UPDATED_EVENT = 'customer_updated'
 
 stripe.api_key = "sk_test_51O6uYYSA6FlGwjPeGp7oRWpHKOFb74z6U45KYislv8nXsWQntNGr6R8ujI3gkW3cKHSrSz5LtMpe3BdpePe4XRmN00pO2BxfNJ"
 
@@ -15,28 +16,43 @@ kafka_config = {
 kafka_consumer = Consumer(kafka_config)
 kafka_consumer.subscribe(['customer_events'])
 
-
 def check_event(msg):
     message = json.loads(msg.value())
-    if message['action'] == CUSTOMER_CREATED_EVENT:
+    action = message.get('action')
+    customer_id = message.get('customer_id')
+    customer_name = message.get('customer_name')
+    customer_email = message.get('customer_email')
+    if action == CUSTOMER_CREATED_EVENT:
         try:
             stripe.Customer.create(
-                id=message['customer_id'],
-                name=message['customer_name'],
-                email=message['customer_email']
+                name=customer_name,
+                email=customer_email
             )
-            print(f"Customer {message['customer_id']} created on stripe")    
-        except:
-            print(f"Customer {message['customer_id']} error on stripe")
+            print(f"Customer {customer_id} created on Stripe")
+        except Exception as e:
+            print(f"Error creating customer {customer_id} on Stripe: {e}")
     
-
-    elif message['action'] == CUSTOMER_DELETED_EVENT:
+    elif action == CUSTOMER_UPDATED_EVENT:
         try:
-            stripe.Customer.delete(str(message['customer_id']))
-            print(f"Customer {message['customer_id']} deleted")
+            stripe.Customer.modify(
+                customer_id,
+                name=customer_name,
+                email=customer_email
+            )
+            print(f"Customer {customer_id} updated on Stripe")
         except stripe.error.InvalidRequestError:
-            print(f"Customer {message['customer_id']} not found in Stripe")
+            print(f"Customer {customer_id} not found on Stripe")
+        except Exception as e:
+            print(f"Error updating customer {customer_id} on Stripe: {e}")
 
+    elif action == CUSTOMER_DELETED_EVENT:
+        try:
+            stripe.Customer.delete(customer_id)
+            print(f"Customer {customer_id} deleted on Stripe")
+        except stripe.error.InvalidRequestError:
+            print(f"Customer {customer_id} not found on Stripe")
+        except Exception as e:
+            print(f"Error deleting customer {customer_id} on Stripe: {e}")
 
 def main():
     try:
@@ -45,6 +61,7 @@ def main():
             print("Polling")
             if msg is None:
                 continue
+
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
                     print('End of partition reached')
